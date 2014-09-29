@@ -42,7 +42,7 @@ public class RobotPlayer {
 						if (Math.random() < 0.25){
 							there = Direction.EAST;
 						} else if (Math.random() > 0.75) {
-							there = Direction.WEST;
+							there = Direction.SOUTH_WEST;
 						} else {
 							there = toHome;
 						}
