@@ -1,4 +1,4 @@
-package TestPlayer;
+package fightPlayer;
 
 import battlecode.common.*;
 
@@ -20,13 +20,12 @@ public class HQBehavior {
 		case INIT:
 			MapMaker.makeMap(rc);
 			MapMaker.broadcastMap(rc);
-			rc.broadcast(10000, 1);
-			assemblyPositions = MapMaker.buildImportanceMap(4,rc);
+			assemblyPositions = MapMaker.buildImportanceMap(2,rc);
 //			MapMaker.displayMap();
-			sendBuildPastrCommand(assemblyPositions[0],11000,rc);
-			sendBuildPastrCommand(assemblyPositions[1],11001,rc);
-			sendBuildPastrCommand(assemblyPositions[2],11002,rc);
-			sendBuildPastrCommand(assemblyPositions[3],11003,rc);
+			sendCommand(assemblyPositions[0],11000,rc,StaticVariables.COMMAND_BUILD_PASTR);
+			sendCommand(assemblyPositions[0],11001,rc,StaticVariables.COMMAND_BUILD_PASTR);
+			sendCommand(assemblyPositions[0],11002,rc,StaticVariables.COMMAND_ASSEMBLE_AT_LOCATION);
+			sendCommand(assemblyPositions[0],11003,rc,StaticVariables.COMMAND_ASSEMBLE_AT_LOCATION);
 			state = HQState.DEFAULT;
 			break;
 		case DEFAULT:
@@ -38,12 +37,17 @@ public class HQBehavior {
 					rc.spawn(toEnemy);
 				}
 			}
+			MapLocation[] enemyPastr = rc.sensePastrLocations(rc.getTeam().opponent());
+			if(enemyPastr.length > 0){
+				sendCommand(enemyPastr[0],11002,rc,StaticVariables.COMMAND_ASSEMBLE_AT_LOCATION);
+				sendCommand(enemyPastr[0],11003,rc,StaticVariables.COMMAND_ASSEMBLE_AT_LOCATION);
+			}
 			break;
 		}
 	}
 	
-	public static void sendBuildPastrCommand(MapLocation loc, int channelID, RobotController rc) throws Exception{
-		int broadcast = StaticFunctions.locToInt(loc) + 10000;
+	public static void sendCommand(MapLocation loc, int channelID, RobotController rc, int command) throws Exception{
+		int broadcast = StaticFunctions.locToInt(loc) + (10000 * command);
 		rc.broadcast(channelID, broadcast);
 	}
 }

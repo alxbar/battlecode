@@ -1,4 +1,4 @@
-package TestPlayer;
+package fightPlayer;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,8 +7,7 @@ import java.util.Comparator;
 import battlecode.common.*;
 
 public class MapMaker {
-	public static final int HQ_FIELD_WIDTH = 3;
-	public static final int HQ_FIELD_HEIGHT = 3;
+	
 	public static int width,height;
 	public static int[][] map;
 	public static int[][] importanceMap;
@@ -26,10 +25,10 @@ public class MapMaker {
 	public static MapLocation[] buildImportanceMap(int num, RobotController rc){
 		importanceMap = new int[width][height];
 		int[][] tmpMap = new int[width][height];
-		int xStart = HQ_FIELD_WIDTH;
-		int xEnd = width-HQ_FIELD_WIDTH;
-		int yStart = HQ_FIELD_HEIGHT;
-		int yEnd = height-HQ_FIELD_HEIGHT;
+		int xStart = StaticVariables.HQ_FIELD_WIDTH;
+		int xEnd = width-StaticVariables.HQ_FIELD_WIDTH;
+		int yStart = StaticVariables.HQ_FIELD_HEIGHT;
+		int yEnd = height-StaticVariables.HQ_FIELD_HEIGHT;
 		int count = 0;
 		for(int y = yStart; y < yEnd; y++){
 			for(int x = xStart; x < xEnd; x ++){
@@ -77,7 +76,7 @@ public class MapMaker {
 		}
 		MapLocation[] result = new MapLocation[num];
 		double best = 0;
-		for(int l = 0; l < 500; l++){
+		for(int l = 0; l < 6; l++){
 			MapLocation[] currentLocs =  new MapLocation[num];
 			double[] worstDistances = new double[num];
 			double current = 0;

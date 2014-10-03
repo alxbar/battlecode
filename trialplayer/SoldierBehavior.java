@@ -1,4 +1,4 @@
-package TestPlayer;
+package fightPlayer;
 
 import java.util.Random;
 
@@ -10,39 +10,53 @@ public class SoldierBehavior {
 	static int width,height;
 	static MapLocation target;
 	private enum SoldierState{
-		SPAWN,WAITING_FOR_COMMAND,BUILD_PASTR;
+		SPAWN,WAITING_FOR_COMMAND,BUILD_PASTR, ASSEMBLE;
 	}
-	
+	static int count = 0;
 	public static SoldierState state = SoldierState.SPAWN;
 	public static int iD;
-	
 	public static void run(RobotController rc) throws Exception{
 		if(!rc.isActive()){
 			return;
 		}
 		
 		if(state == SoldierState.SPAWN){
-			moveRandomly(rc);	
-			if(rc.readBroadcast(10000)==1){
-				updateInternalMap(rc);
-				iD = rc.getRobot().getID();
-				state = SoldierState.WAITING_FOR_COMMAND;
+			if(!tryToShoot(rc)){
+				moveRandomly(rc);
 			}
+			iD = rc.getRobot().getID();
+			state = SoldierState.WAITING_FOR_COMMAND;
 		}else if(state == SoldierState.WAITING_FOR_COMMAND){
-			moveRandomly(rc);
-			int command = rc.readBroadcast(11000+(iD%4));
-			if(command / 10000 == 1){
+			if(!tryToShoot(rc)){
+				moveRandomly(rc);	
+				int command = rc.readBroadcast(11000+(iD%4));
 				target = StaticFunctions.intToLoc(command);
-//				System.out.println("moveTo: " + target);
-				state = SoldierState.BUILD_PASTR;
+				state = interpreteCommand(command/10000);	
 			}
 		}else if(state == SoldierState.BUILD_PASTR){
-			tryToShoot(rc);
-			if(rc.getLocation().equals(target) && rc.isActive()){
-				rc.construct(RobotType.PASTR);
+			count ++;
+			if(!tryToShoot(rc)){
+				if(rc.getLocation().equals(target) && rc.isActive()){
+					rc.construct(RobotType.PASTR);
+				}
+				if(!moveToLoc(target,rc)){
+					moveRandomly(rc);
+				}	
+				if(count > 5){
+					state = SoldierState.WAITING_FOR_COMMAND;
+					count = 0;
+				}
 			}
-			if(!moveToLoc(target,rc)){
-				moveRandomly(rc);
+		}else if(state == SoldierState.ASSEMBLE){
+			count ++;
+			if(!tryToShoot(rc)){
+				if(!moveToLoc(target,rc)){
+					moveRandomly(rc);
+				}	
+			}
+			if(count > 5){
+				state = SoldierState.WAITING_FOR_COMMAND;
+				count = 0;
 			}
 		}
 	}
@@ -80,8 +94,9 @@ public class SoldierBehavior {
 			}
 		}
 	}
-	private static void tryToShoot(RobotController rc) throws Exception {
+	private static boolean tryToShoot(RobotController rc) throws Exception {
 		Robot[] enemyRobots = rc.senseNearbyGameObjects(Robot.class,10000,rc.getTeam().opponent());
+		
 		if(enemyRobots.length > 0){
 			for(int i = 0; i < enemyRobots.length; i ++){
 				Robot current = enemyRobots[i];
@@ -90,9 +105,21 @@ public class SoldierBehavior {
 				if(anEnemyInfo.type != RobotType.HQ && anEnemyInfo.location.distanceSquaredTo(rc.getLocation())<rc.getType().attackRadiusMaxSquared){
 					if(rc.isActive()){
 						rc.attackSquare(anEnemyInfo.location);
+						return true;
 					}
 				}
 			}
 		}
+		return false;
+	}
+	public static SoldierState interpreteCommand(int command){
+		SoldierState next = SoldierState.WAITING_FOR_COMMAND;
+		switch(command){
+		case StaticVariables.COMMAND_ASSEMBLE_AT_LOCATION:
+			return SoldierState.ASSEMBLE;
+		case StaticVariables.COMMAND_BUILD_PASTR:
+			return SoldierState.BUILD_PASTR;
+		}
+		return next;
 	}
 }
