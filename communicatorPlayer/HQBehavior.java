@@ -50,6 +50,14 @@ public class HQBehavior {
 					}
 				}
 			}
+			if(lifeCount >= 400 &&rc.sensePastrLocations(rc.getTeam()).length == 0){
+				for(int i = robots.length-1; i >= 0; i --){
+					if(robots[i] != null){
+						sendCommand(assemblyPositions[0], StaticVariables.ROBOT_COMMAND_CHANNEL_START+i, rc, StaticVariables.COMMAND_BUILD_PASTR);
+						return;
+					}
+				}
+			}
 			break;
 		}
 	}

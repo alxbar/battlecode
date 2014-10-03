@@ -9,21 +9,36 @@ public class SoldierBehavior {
 	static int[][] map;
 	static int width,height;
 	static MapLocation target;
+	static MapLocation backup;
 	private enum SoldierState{
-		SPAWN,WAITING_FOR_COMMAND,BUILD_PASTR, ASSEMBLE;
+		SPAWN,WAITING_FOR_COMMAND,BUILD_PASTR, ASSEMBLE, FLEEING;
 	}
 	static int count = 0;
 	public static SoldierState state = SoldierState.SPAWN;
 	public static int iD;
 	public static void run(RobotController rc) throws Exception{
+		if(rc.getHealth() <= StaticVariables.ROBOT_FLEEING_HEALTH_THRESHOLD){
+			state = SoldierState.FLEEING;
+		}
+		if(state == SoldierState.FLEEING){
+			count ++;
+			broadcastFeedback(rc);
+			if(!moveToLoc(backup,rc)){
+				moveRandomly(rc);
+			}
+			if(rc.getHealth() >= StaticVariables.ROBOT_RECOVERING_HEALTH_THRESHOLD){
+				state = SoldierState.WAITING_FOR_COMMAND;
+			}
+		}
 		if(state == SoldierState.SPAWN){
 			if(!tryToShoot(rc)){
 				moveRandomly(rc);
 			}
 			iD = obtainID(rc);
 			if(iD != 0){
-				System.out.println("new id obtained: " + iD + " roundCount: " + Clock.getRoundNum());
+//				System.out.println("new id obtained: " + iD + " roundCount: " + Clock.getRoundNum());
 				state = SoldierState.WAITING_FOR_COMMAND;
+				backup = rc.getLocation();
 			}
 		}else if(state == SoldierState.WAITING_FOR_COMMAND){
 			count ++;
@@ -51,6 +66,23 @@ public class SoldierBehavior {
 				}
 			}
 //			System.out.println("after: " + Clock.getBytecodeNum());
+		}else if(SoldierState.BUILD_PASTR == state){
+			count ++;
+			broadcastFeedback(rc);
+			if(!tryToShoot(rc)){
+				if(rc.getLocation().equals(target) && rc.isActive()){
+					rc.construct(RobotType.PASTR);
+//					System.out.println(iD + " tries to construct PASTR");
+				}
+				if(!moveToLoc(target,rc)){
+					moveRandomly(rc);
+				}	
+				if(count % 3 == 0){
+					int command = rc.readBroadcast(11000+(iD-1));
+					target = StaticFunctions.intToLoc(command);
+					state = interpreteCommand(command/10000);
+				}
+			}
 		}
 	}
 	public static void broadcastFeedback(RobotController rc) throws Exception{
@@ -90,7 +122,7 @@ public class SoldierBehavior {
 		}
 	}
 	private static boolean tryToShoot(RobotController rc) throws Exception {
-
+		if(rc.isActive()){
 			Robot[] enemyRobots = rc.senseNearbyGameObjects(Robot.class,10000,rc.getTeam().opponent());
 			
 			if(enemyRobots.length > 0){
@@ -105,7 +137,7 @@ public class SoldierBehavior {
 					}
 				}
 			}
-
+		}
 		return false;
 	}
 	public static SoldierState interpreteCommand(int command){
